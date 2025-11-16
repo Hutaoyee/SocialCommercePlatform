@@ -53,6 +53,19 @@ export const usePostsStore = defineStore('posts', () => {
         }
     }
 
+    // 创建标签
+    const createTag = async (tagName) => {
+        try {
+            const response = await communicateAPI.createTag({ name: tagName })
+            // 添加到本地列表
+            availableTags.value.push(response.data)
+            return response.data
+        } catch (error) {
+            console.error('创建标签失败:', error)
+            throw error
+        }
+    }
+
     // 上传图片
     const uploadImage = async (file) => {
         try {
@@ -177,5 +190,5 @@ export const usePostsStore = defineStore('posts', () => {
         }
     }
 
-    return { posts, availableTags, pagination, fetchPosts, fetchTags, uploadImage, uploadImages, deletePost, createPost, updatePost, createReply, fetchReplies, deleteReply }
+    return { posts, availableTags, pagination, fetchPosts, fetchTags, createTag, uploadImage, uploadImages, deletePost, createPost, updatePost, createReply, fetchReplies, deleteReply }
 })

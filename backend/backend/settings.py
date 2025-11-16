@@ -177,7 +177,7 @@ REST_FRAMEWORK = {
 
 # ==================== JWT 配置 ====================
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),      # 访问令牌 2 小时有效
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=12),      # 访问令牌 12 小时有效
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),      # 刷新令牌 7 天有效
     'ROTATE_REFRESH_TOKENS': True,                    # 刷新后轮换令牌
     'BLACKLIST_AFTER_ROTATION': True,                 # 旧令牌加入黑名单
@@ -208,3 +208,14 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
+# ==================== 登录配置 ====================
+# 管理页面登录跳转到首页
+LOGIN_URL = '/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+# ==================== Stripe 配置 ====================
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')

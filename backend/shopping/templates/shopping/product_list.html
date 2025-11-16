@@ -11,19 +11,19 @@
     </div>
     <div class="level-right">
         <div class="level-item">
-            <a href="{% url 'shopping:category_management' %}" class="button is-info">
+            <a href="{% url 'shopping_manage:category_list' %}" class="button is-info">
                 <span class="icon"><i class="fas fa-folder"></i></span>
                 <span>分类管理</span>
             </a>
         </div>
         <div class="level-item">
-            <a href="{% url 'shopping:attribute_management' %}" class="button is-info">
+            <a href="{% url 'shopping_manage:attribute_list' %}" class="button is-info">
                 <span class="icon"><i class="fas fa-tags"></i></span>
                 <span>属性管理</span>
             </a>
         </div>
         <div class="level-item">
-            <a href="{% url 'shopping:spu_create' %}" class="button is-primary">
+            <a href="{% url 'shopping_manage:spu_create' %}" class="button is-primary">
                 <span class="icon"><i class="fas fa-plus"></i></span>
                 <span>新建商品</span>
             </a>
@@ -57,7 +57,7 @@
                 </button>
             </p>
             <p class="control">
-                <a href="{% url 'shopping:product_management' %}" class="button is-light">
+                <a href="{% url 'shopping_manage:product_list' %}" class="button is-light">
                     <span class="icon"><i class="fas fa-redo"></i></span>
                     <span>重置</span>
                 </a>
@@ -113,16 +113,16 @@
                 <td>{{ spu.created_at|date:"Y-m-d H:i" }}</td>
                 <td>
                     <div class="buttons are-small">
-                        <a href="{% url 'shopping:sku_management' spu.id %}" class="button is-info" title="管理SKU">
+                        <a href="{% url 'shopping_manage:sku_list' spu.id %}" class="button is-info" title="管理SKU">
                             <span class="icon"><i class="fas fa-list"></i></span>
                         </a>
-                        <a href="{% url 'shopping:spu_attribute_management' spu.id %}" class="button is-warning" title="设置属性">
+                        <a href="{% url 'shopping_manage:spu_attributes' spu.id %}" class="button is-warning" title="设置属性">
                             <span class="icon"><i class="fas fa-tags"></i></span>
                         </a>
-                        <a href="{% url 'shopping:spu_edit' spu.id %}" class="button is-primary" title="编辑">
+                        <a href="{% url 'shopping_manage:spu_edit' spu.id %}" class="button is-primary" title="编辑">
                             <span class="icon"><i class="fas fa-edit"></i></span>
                         </a>
-                        <form method="post" action="{% url 'shopping:spu_delete' spu.id %}" style="display: inline;" onsubmit="return confirm('确定删除这个商品吗？这将删除所有关联的SKU！');">
+                        <form method="post" action="{% url 'shopping_manage:spu_delete' spu.id %}" style="display: inline;" onsubmit="return confirm('确定删除这个商品吗？这将删除所有关联的SKU！');">
                             {% csrf_token %}
                             <button type="submit" class="button is-danger" title="删除">
                                 <span class="icon"><i class="fas fa-trash"></i></span>

@@ -11,13 +11,13 @@
     </div>
     <div class="level-right">
         <div class="level-item">
-            <a href="{% url 'shopping:product_management' %}" class="button is-info">
+            <a href="{% url 'shopping_manage:product_list' %}" class="button is-info">
                 <span class="icon"><i class="fas fa-box"></i></span>
                 <span>商品管理</span>
             </a>
         </div>
         <div class="level-item">
-            <a href="{% url 'shopping:category_management' %}" class="button is-info">
+            <a href="{% url 'shopping_manage:category_list' %}" class="button is-info">
                 <span class="icon"><i class="fas fa-folder"></i></span>
                 <span>分类管理</span>
             </a>
@@ -49,7 +49,7 @@
                                 <span class="icon"><i class="fas fa-plus"></i></span>
                                 <span>添加值</span>
                             </button>
-                            <form method="post" action="{% url 'shopping:attribute_delete' attribute.id %}" style="display: inline;" onsubmit="return confirm('确定删除属性「{{ attribute.name }}」吗？这将删除所有相关的属性值和SKU关联！');">
+                            <form method="post" action="{% url 'shopping_manage:attribute_delete' attribute.id %}" style="display: inline;" onsubmit="return confirm('确定删除属性「{{ attribute.name }}」吗？这将删除所有相关的属性值和SKU关联！');">
                                 {% csrf_token %}
                                 <button type="submit" class="button is-danger">
                                     <span class="icon"><i class="fas fa-trash"></i></span>
@@ -64,7 +64,7 @@
                 {% for value in attribute.values.all %}
                 <span class="tag is-medium is-info is-light">
                     {{ value.value }}
-                    <form method="post" action="{% url 'shopping:attribute_value_delete' value.id %}" style="display: inline;" onsubmit="return confirm('确定删除属性值「{{ value.value }}」吗？');">
+                    <form method="post" action="{% url 'shopping_manage:attribute_value_delete' value.id %}" style="display: inline;" onsubmit="return confirm('确定删除属性值「{{ value.value }}」吗？');">
                         {% csrf_token %}
                         <button type="submit" class="delete is-small"></button>
                     </form>
@@ -95,7 +95,7 @@
             <p class="modal-card-title">新建属性</p>
             <button class="delete" aria-label="close" onclick="closeAttributeModal()"></button>
         </header>
-        <form method="post" action="{% url 'shopping:attribute_create' %}">
+        <form method="post" action="{% url 'shopping_manage:attribute_create' %}">
             {% csrf_token %}
             <section class="modal-card-body">
                 <div class="field">
@@ -154,7 +154,7 @@
         const attrId = button.getAttribute('data-attribute-id');
         const attrName = button.getAttribute('data-attribute-name');
         document.getElementById('attributeName').textContent = attrName;
-        document.getElementById('valueForm').action = `/api/manage/attribute/${attrId}/value/create/`;
+        document.getElementById('valueForm').action = `/manage/shopping/attributes/${attrId}/values/create/`;
         document.getElementById('valueModal').classList.add('is-active');
     }
 

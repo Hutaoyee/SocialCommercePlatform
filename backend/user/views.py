@@ -17,9 +17,10 @@ from .serializers import UserSerializer
 from .serializers import PostFavoriteSerializer
 from .serializers import ProductFavoriteSerializer
 from .serializers import CartItemSerializer
+from .serializers import AddressSerializer
 
 # 模型
-from .models import PostFavorite, ProductFavorite, CartItem
+from .models import PostFavorite, ProductFavorite, CartItem, Address
 
 # Create your views here.
 
@@ -384,3 +385,50 @@ def batch_remove_from_cart(request):
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': f'删除失败：{str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ==================== 地址管理 ====================
+
+class AddressViewSet(viewsets.ModelViewSet):
+    """地址管理 ViewSet"""
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None  # 禁用分页，直接返回数组
+    
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user).order_by('-is_default', '-id')
+    
+    def perform_create(self, serializer):
+        # 不在这里设置user，让序列化器的create方法处理
+        serializer.save()
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_default_address(request, address_id):
+    """设置默认地址"""
+    user = request.user
+    
+    try:
+        address = Address.objects.get(id=address_id, user=user)
+        
+        # 取消其他地址的默认状态
+        Address.objects.filter(user=user, is_default=True).update(is_default=False)
+        
+        # 设置当前地址为默认
+        address.is_default = True
+        address.save()
+        
+        serializer = AddressSerializer(address)
+        return Response({
+            'message': '默认地址设置成功',
+            'address': serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Address.DoesNotExist:
+        return Response({'error': '地址不存在'}, status=status.HTTP_404_NOT_FOUND)

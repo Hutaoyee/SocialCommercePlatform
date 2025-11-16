@@ -5,7 +5,7 @@
 {% block content %}
 <nav class="breadcrumb" aria-label="breadcrumbs">
     <ul>
-        <li><a href="{% url 'shopping:product_management' %}">商品列表</a></li>
+        <li><a href="{% url 'shopping_manage:product_list' %}">商品列表</a></li>
         <li class="is-active"><a href="#" aria-current="page">SKU管理</a></li>
     </ul>
 </nav>
@@ -22,7 +22,7 @@
     </div>
     <div class="level-right">
         <div class="level-item">
-            <a href="{% url 'shopping:sku_create' spu.id %}" class="button is-primary">
+            <a href="{% url 'shopping_manage:sku_create' spu.id %}" class="button is-primary">
                 <span class="icon"><i class="fas fa-plus"></i></span>
                 <span>新建SKU</span>
             </a>
@@ -33,7 +33,7 @@
 {% if spu_attributes.count == 0 %}
 <div class="notification is-warning">
     <p><strong>提示：</strong>该商品还没有设置属性。</p>
-    <p>请先 <a href="{% url 'shopping:spu_attribute_management' spu.id %}">设置商品属性</a> 后再创建SKU。</p>
+    <p>请先 <a href="{% url 'shopping_manage:spu_attribute_management' spu.id %}">设置商品属性</a> 后再创建SKU。</p>
 </div>
 {% endif %}
 
@@ -104,10 +104,10 @@
                 </td>
                 <td>
                     <div class="buttons are-small">
-                        <a href="{% url 'shopping:sku_edit' sku.sku_code %}" class="button is-primary">
+                        <a href="{% url 'shopping_manage:sku_edit' sku.sku_code %}" class="button is-primary">
                             <span class="icon"><i class="fas fa-edit"></i></span>
                         </a>
-                        <form method="post" action="{% url 'shopping:sku_delete' sku.sku_code %}" style="display: inline;" onsubmit="return confirm('确定删除这个SKU吗？');">
+                        <form method="post" action="{% url 'shopping_manage:sku_delete' sku.sku_code %}" style="display: inline;" onsubmit="return confirm('确定删除这个SKU吗？');">
                             {% csrf_token %}
                             <button type="submit" class="button is-danger">
                                 <span class="icon"><i class="fas fa-trash"></i></span>

@@ -15,9 +15,9 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
-  // server: {
-  //   host: 'localhost',
-  //   port: 5173,
-  //   https: true
-  // }
+  server: {
+    allowedHosts: [
+      'windtight-unmimetic-alexandria.ngrok-free.dev'
+    ]
+  }
 })

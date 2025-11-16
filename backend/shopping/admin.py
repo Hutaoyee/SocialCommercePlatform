@@ -7,7 +7,8 @@ from dal import autocomplete
 from django.utils.translation import gettext_lazy as _
 from .models import (
     Category, ProductSPU, ProductSKU, Attribute, AttributeValue,
-    ProductSPUAttribute, ProductSKUAttributeValue, Inventory, ProductImage, ProductReview
+    ProductSPUAttribute, ProductSKUAttributeValue, Inventory, ProductImage, ProductReview,
+    Order, OrderItem, RefundRequest, OrderItemReview
 )
 
 class CategoryFilter(admin.SimpleListFilter):
@@ -90,7 +91,7 @@ class ProductSKUAttributeValueAdmin(admin.ModelAdmin):
     list_display = ['sku', 'attribute', 'attribute_value']  
     list_filter = ['attribute', CategoryFilter] 
     search_fields = ['sku__title', 'attribute_value__value']
-    # TODO 过滤属性
+
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         form.base_fields['attribute_value'].widget = autocomplete.ModelSelect2(
@@ -142,3 +143,147 @@ class ProductReviewAdmin(admin.ModelAdmin):
     def content_preview(self, obj):
         return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
     content_preview.short_description = '评论内容'
+
+
+# ==================== 订单管理 ====================
+
+class OrderItemInline(admin.TabularInline):
+    """订单商品内联显示"""
+    model = OrderItem
+    extra = 0
+    readonly_fields = ['sku', 'sku_title', 'spu_name', 'price', 'quantity', 'subtotal']
+    can_delete = False
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ['order_number', 'user', 'total_amount', 'status', 'payment_method', 'created_at']
+    list_filter = ['status', 'payment_method', 'created_at']
+    search_fields = ['order_number', 'user__username', 'receiver_name', 'receiver_phone']
+    readonly_fields = ['order_number', 'created_at', 'paid_at', 'shipped_at', 'completed_at']
+    inlines = [OrderItemInline]
+    actions = ['mark_as_shipped']
+    
+    fieldsets = (
+        ('订单信息', {
+            'fields': ('order_number', 'user', 'total_amount', 'status', 'payment_method')
+        }),
+        ('收货信息', {
+            'fields': ('receiver_name', 'receiver_phone', 'receiver_province', 'receiver_city', 
+                      'receiver_district', 'receiver_address')
+        }),
+        ('时间信息', {
+            'fields': ('created_at', 'paid_at', 'shipped_at', 'completed_at')
+        }),
+        ('其他', {
+            'fields': ('remark',)
+        }),
+    )
+    
+    def mark_as_shipped(self, request, queryset):
+        """批量标记为已发货"""
+        from django.utils import timezone
+        
+        updated = queryset.filter(status='paid').update(
+            status='shipped',
+            shipped_at=timezone.now()
+        )
+        
+        self.message_user(request, f'成功发货 {updated} 个订单')
+    mark_as_shipped.short_description = '标记为已发货'
+    
+    def has_add_permission(self, request):
+        """禁止在admin中直接创建订单"""
+        return False
+
+
+@admin.register(OrderItem)
+class OrderItemAdmin(admin.ModelAdmin):
+    list_display = ['order', 'spu_name', 'sku_title', 'price', 'quantity', 'subtotal', 'is_reviewed']
+    list_filter = ['order__created_at', 'is_reviewed']
+    search_fields = ['order__order_number', 'spu_name', 'sku_title']
+    readonly_fields = ['order', 'sku', 'sku_title', 'spu_name', 'price', 'quantity', 'subtotal']
+    
+    def has_add_permission(self, request):
+        """禁止在admin中直接创建订单商品"""
+        return False
+
+
+# ==================== 退款申请管理 ====================
+
+@admin.register(RefundRequest)
+class RefundRequestAdmin(admin.ModelAdmin):
+    list_display = ['order', 'reason', 'refund_amount', 'status', 'created_at', 'processed_at']
+    list_filter = ['status', 'reason', 'created_at']
+    search_fields = ['order__order_number', 'description']
+    readonly_fields = ['order', 'reason', 'description', 'refund_amount', 'created_at']
+    
+    fieldsets = (
+        ('退款信息', {
+            'fields': ('order', 'reason', 'description', 'refund_amount', 'status')
+        }),
+        ('处理信息', {
+            'fields': ('processed_at', 'admin_remark')
+        }),
+    )
+    
+    actions = ['approve_refund', 'reject_refund']
+    
+    def approve_refund(self, request, queryset):
+        """批量同意退款"""
+        from django.utils import timezone
+        
+        updated = 0
+        for refund in queryset.filter(status='pending'):
+            refund.status = 'approved'
+            refund.processed_at = timezone.now()
+            refund.save()
+            
+            # 更新订单状态
+            refund.order.status = 'refunded'
+            refund.order.save()
+            
+            # 恢复库存
+            for item in refund.order.items.all():
+                inventory = item.sku.inventory
+                inventory.quantity += item.quantity
+                inventory.save()
+            
+            updated += 1
+        
+        self.message_user(request, f'成功处理 {updated} 个退款申请')
+    approve_refund.short_description = '同意退款'
+    
+    def reject_refund(self, request, queryset):
+        """批量拒绝退款"""
+        from django.utils import timezone
+        
+        updated = queryset.filter(status='pending').update(
+            status='rejected',
+            processed_at=timezone.now()
+        )
+        
+        self.message_user(request, f'成功拒绝 {updated} 个退款申请')
+    reject_refund.short_description = '拒绝退款'
+    
+    def has_add_permission(self, request):
+        """禁止在admin中直接创建退款申请"""
+        return False
+
+
+# ==================== 订单评价管理 ====================
+
+@admin.register(OrderItemReview)
+class OrderItemReviewAdmin(admin.ModelAdmin):
+    list_display = ['order_item', 'user', 'spu', 'rating', 'content_preview', 'created_at']
+    list_filter = ['rating', 'created_at']
+    search_fields = ['user__username', 'spu__name', 'content']
+    readonly_fields = ['order_item', 'user', 'spu', 'created_at', 'updated_at']
+    
+    def content_preview(self, obj):
+        return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
+    content_preview.short_description = '评价内容'
+    
+    def has_add_permission(self, request):
+        """禁止在admin中直接创建评价"""
+        return False

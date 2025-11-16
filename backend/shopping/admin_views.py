@@ -100,7 +100,7 @@ def spu_create(request):
                 )
             
             messages.success(request, f'SPU "{name}" 创建成功！')
-            return redirect('shopping:product_management')
+            return redirect('shopping_manage:product_list')
         
         except Exception as e:
             messages.error(request, f'创建失败: {str(e)}')
@@ -139,7 +139,7 @@ def spu_edit(request, spu_id):
                 )
             
             messages.success(request, f'SPU "{spu.name}" 更新成功！')
-            return redirect('shopping:product_management')
+            return redirect('shopping_manage:product_list')
         
         except Exception as e:
             messages.error(request, f'更新失败: {str(e)}')
@@ -162,7 +162,7 @@ def spu_delete(request, spu_id):
     spu_name = spu.name
     spu.delete()
     messages.success(request, f'SPU "{spu_name}" 已删除！')
-    return redirect('shopping:product_management')
+    return redirect('shopping_manage:product_list')
 
 
 @require_http_methods(["POST"])
@@ -255,7 +255,7 @@ def sku_create(request, spu_id):
                     )
                 
                 messages.success(request, f'SKU "{title}" 创建成功！')
-                return redirect('shopping:sku_management', spu_id=spu_id)
+                return redirect('shopping_manage:sku_list', spu_id=spu_id)
         
         except Exception as e:
             messages.error(request, f'创建失败: {str(e)}')
@@ -324,7 +324,7 @@ def sku_edit(request, sku_code):
                         )
                 
                 messages.success(request, f'SKU "{sku.title}" 更新成功！')
-                return redirect('shopping:sku_management', spu_id=spu.id)
+                return redirect('shopping_manage:sku_list', spu_id=spu.id)
         
         except Exception as e:
             messages.error(request, f'更新失败: {str(e)}')
@@ -369,7 +369,7 @@ def sku_delete(request, sku_code):
     sku_title = sku.title
     sku.delete()
     messages.success(request, f'SKU "{sku_title}" 已删除！')
-    return redirect('shopping:sku_management', spu_id=spu_id)
+    return redirect('shopping_manage:sku_list', spu_id=spu_id)
 
 
 # ==================== 属性管理 ====================
@@ -398,7 +398,7 @@ def attribute_create(request):
     except Exception as e:
         messages.error(request, f'创建失败: {str(e)}')
     
-    return redirect('shopping:attribute_management')
+    return redirect('shopping_manage:attribute_list')
 
 
 @login_required
@@ -410,7 +410,7 @@ def attribute_delete(request, attr_id):
     attr_name = attribute.name
     attribute.delete()
     messages.success(request, f'属性 "{attr_name}" 已删除！')
-    return redirect('shopping:attribute_management')
+    return redirect('shopping_manage:attribute_list')
 
 
 @login_required
@@ -426,7 +426,7 @@ def attribute_value_create(request, attr_id):
     except Exception as e:
         messages.error(request, f'创建失败: {str(e)}')
     
-    return redirect('shopping:attribute_management')
+    return redirect('shopping_manage:attribute_list')
 
 
 @login_required
@@ -438,7 +438,7 @@ def attribute_value_delete(request, value_id):
     value_str = attr_value.value
     attr_value.delete()
     messages.success(request, f'属性值 "{value_str}" 已删除！')
-    return redirect('shopping:attribute_management')
+    return redirect('shopping_manage:attribute_list')
 
 
 # ==================== SPU属性关联管理 ====================
@@ -464,7 +464,7 @@ def spu_attribute_management(request, spu_id):
                     )
                 
                 messages.success(request, 'SPU属性更新成功！')
-                return redirect('shopping:product_management')
+                return redirect('shopping_manage:product_list')
         
         except Exception as e:
             messages.error(request, f'更新失败: {str(e)}')
@@ -511,7 +511,7 @@ def category_create(request):
             
             if not name:
                 messages.error(request, '分类名称不能为空！')
-                return redirect('shopping:category_management')
+                return redirect('shopping_manage:category_list')
             
             # 创建分类
             if parent_id:
@@ -521,11 +521,11 @@ def category_create(request):
                 category = Category.objects.create(name=name)
             
             messages.success(request, f'分类 "{name}" 创建成功！')
-            return redirect('shopping:category_management')
+            return redirect('shopping_manage:category_list')
         
         except Exception as e:
             messages.error(request, f'创建失败: {str(e)}')
-            return redirect('shopping:category_management')
+            return redirect('shopping_manage:category_list')
     
     # GET请求，显示创建表单
     categories = get_categories_with_level()
@@ -548,14 +548,14 @@ def category_edit(request, category_id):
             
             if not name:
                 messages.error(request, '分类名称不能为空！')
-                return redirect('shopping:category_management')
+                return redirect('shopping_manage:category_list')
             
             # 检查是否试图将分类设置为自己的子分类
             if parent_id:
                 parent = get_object_or_404(Category, id=parent_id)
                 if parent == category or parent in category.get_descendants():
                     messages.error(request, '不能将分类设置为自己或自己的子分类的父分类！')
-                    return redirect('shopping:category_edit', category_id=category_id)
+                    return redirect('shopping_manage:category_edit', category_id=category_id)
                 category.parent = parent
             else:
                 category.parent = None
@@ -564,7 +564,7 @@ def category_edit(request, category_id):
             category.save()
             
             messages.success(request, f'分类 "{name}" 更新成功！')
-            return redirect('shopping:category_management')
+            return redirect('shopping_manage:category_list')
         
         except Exception as e:
             messages.error(request, f'更新失败: {str(e)}')
@@ -592,14 +592,14 @@ def category_delete(request, category_id):
     # 检查是否有子分类
     if category.get_children().exists():
         messages.error(request, f'分类 "{category.name}" 包含子分类，请先删除子分类！')
-        return redirect('shopping:category_management')
+        return redirect('shopping_manage:category_list')
     
     # 检查是否有商品使用该分类
     if ProductSPU.objects.filter(category=category).exists():
         messages.error(request, f'分类 "{category.name}" 下有商品，无法删除！')
-        return redirect('shopping:category_management')
+        return redirect('shopping_manage:category_list')
     
     category_name = category.name
     category.delete()
     messages.success(request, f'分类 "{category_name}" 已删除！')
-    return redirect('shopping:category_management')
+    return redirect('shopping_manage:category_list')

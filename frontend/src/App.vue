@@ -1,7 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
+
 import Navbar from './components/Navbar.vue'
+import PageLoader from './components/PageLoader.vue'
+
 import { useCartStore } from './stores/cart'
 import { useUserStore } from './stores/user'
 
@@ -17,9 +20,13 @@ onMounted(() => {
 </script>
 
 <template>
+
   <Navbar />
 
   <RouterView />
+
+  <PageLoader />
+
 </template>
 
 <style scoped>

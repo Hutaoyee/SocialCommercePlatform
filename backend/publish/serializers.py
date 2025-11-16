@@ -8,9 +8,27 @@ class ArtistSerializer(serializers.ModelSerializer):
 
 class AlbumSerializer(serializers.ModelSerializer):
     artist = ArtistSerializer(read_only=True)
+    product_info = serializers.SerializerMethodField()
+    
     class Meta:
         model = Album
         fields = '__all__'
+    
+    def get_product_info(self, obj):
+        if obj.product:
+            # 获取主图
+            main_image = obj.product.images.filter(is_main=True).first()
+            if not main_image:
+                # 如果没有主图，获取第一张图片
+                main_image = obj.product.images.first()
+            
+            return {
+                'id': obj.product.id,
+                'name': obj.product.name,
+                'description': obj.product.description,
+                'image': main_image.image.url if main_image else None,
+            }
+        return None
 
 class MusicSerializer(serializers.ModelSerializer):
     artist = ArtistSerializer(read_only=True)

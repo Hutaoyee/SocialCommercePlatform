@@ -5,12 +5,21 @@ from django.db.models import Q
 from .models import Tag, Post, Image, Reply
 from .serializers import TagSerializer, PostSerializer, ImageSerializer, ReplySerializer
 from .pagination import CustomPageNumberPagination
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    
+    def get_permissions(self):
+        """
+        读取操作允许所有人，创建/更新/删除操作只允许管理员
+        """
+        if self.action in ['list', 'retrieve']:
+            permission_classes = []
+        else:
+            permission_classes = [IsAdminUser]
+        return [permission() for permission in permission_classes]
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()

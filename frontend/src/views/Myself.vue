@@ -251,19 +251,17 @@
             />
         </div>
 
-        <!-- 其他标签的占位内容 -->
+        <!-- 订单内容区域 -->
         <div v-show="activeTab === 'orders'" class="mt-4">
-            <div class="notification is-info is-light">
-                订单功能开发中...
-            </div>
+            <MyOrdersContent ref="ordersRef" />
         </div>
 
+        <!-- 拥有商品内容区域 -->
         <div v-show="activeTab === 'owned'" class="mt-4">
-            <div class="notification is-info is-light">
-                拥有功能开发中...
-            </div>
+            <MyProductsContent ref="productsRef" />
         </div>
 
+        <!-- 收藏内容区域 -->
         <div v-show="activeTab === 'favorites'" class="mt-4">
             <Favorite ref="favoriteRef" />
         </div>
@@ -278,12 +276,16 @@
     import { userAPI } from '@/api/user'
     import PostList from '@/components/PostList.vue'
     import Favorite from '@/components/Favorite.vue'
+    import MyOrdersContent from '@/components/MyOrdersContent.vue'
+    import MyProductsContent from '@/components/MyProductsContent.vue'
     import { storeToRefs } from 'pinia'
     
     export default {
         components: {
             PostList,
-            Favorite
+            Favorite,
+            MyOrdersContent,
+            MyProductsContent
         },
         setup() {
             const userStore = useUserStore()
@@ -305,6 +307,8 @@
             // 标签页状态 - 默认显示订单
             const activeTab = ref('orders')
             const favoriteRef = ref(null)  // Favorite 组件引用
+            const ordersRef = ref(null)    // Orders 组件引用
+            const productsRef = ref(null)  // Products 组件引用
 
             // 分页状态
             const currentPage = ref(1)
@@ -514,16 +518,15 @@
 
             // 监听标签页切换
             watch(activeTab, async (newTab, oldTab) => {
-                // 从 posts 切换到 favorites 时，刷新收藏数据
-                if (oldTab === 'posts' && newTab === 'favorites') {
+                // 切换到收藏页面时，刷新收藏数据
+                if (newTab === 'favorites') {
                     console.log('切换到收藏页面，刷新收藏数据')
-                    // 等待 DOM 更新后再调用
                     setTimeout(() => {
                         favoriteRef.value?.refresh()
                     }, 100)
                 }
-                // 从 favorites 切换到 posts 时，刷新帖子数据
-                else if (oldTab === 'favorites' && newTab === 'posts') {
+                // 切换到帖子页面时，刷新帖子数据
+                else if (newTab === 'posts' && oldTab !== 'posts') {
                     console.log('切换到帖子页面，刷新帖子数据')
                     isLoading.value = true
                     try {
@@ -536,6 +539,20 @@
                     } finally {
                         isLoading.value = false
                     }
+                }
+                // 切换到订单页面时，刷新订单数据
+                else if (newTab === 'orders') {
+                    console.log('切换到订单页面，刷新订单数据')
+                    setTimeout(() => {
+                        ordersRef.value?.refresh()
+                    }, 100)
+                }
+                // 切换到拥有商品页面时，刷新商品数据
+                else if (newTab === 'owned') {
+                    console.log('切换到拥有商品页面，刷新商品数据')
+                    setTimeout(() => {
+                        productsRef.value?.refresh()
+                    }, 100)
                 }
             })
 
@@ -590,6 +607,8 @@
 
                 activeTab,            // 当前标签页
                 favoriteRef,          // Favorite 组件引用
+                ordersRef,            // Orders 组件引用
+                productsRef,          // Products 组件引用
                 userPosts,            // 用户的帖子列表
                 paginatedUserPosts,   // 分页后的帖子列表
                 currentPage,          // 当前页码

@@ -50,16 +50,20 @@
                         </div>
                         <footer class="card-footer">
                             <a 
-                                @click="addToCart(favorite.product)" 
+                                @click="openSKUDialog(favorite.product)" 
                                 class="card-footer-item has-text-success"
                             >
-                                <i class="fas fa-cart-plus mr-1"></i>加入购物车
+                                <span class="icon">
+                                    <font-awesome-icon icon="fa-solid fa-cart-plus" />
+                                </span>
                             </a>
                             <a 
                                 @click="removeProductFavorite(favorite.id)" 
                                 class="card-footer-item has-text-danger"
                             >
-                                <i class="fas fa-trash mr-1"></i>移除
+                                <span class="icon">
+                                    <font-awesome-icon icon="fa-solid fa-trash" />
+                                </span>
                             </a>
                         </footer>
                     </div>
@@ -94,6 +98,14 @@
             </div>
         </div>
     </div>
+
+    <!-- SKU选择对话框 -->
+    <SKUSelectDialog
+        :show="showSKUDialog"
+        :product="selectedProduct"
+        @close="closeSKUDialog"
+        @success="handleAddToCartSuccess"
+    />
 </template>
 
 <script setup>
@@ -105,6 +117,7 @@ import { useProductsStore } from '../stores/products'
 import { favoriteAPI } from '../api/favorite'
 import productFavoriteAPI from '../api/productFavorite'
 import PostList from './PostList.vue'
+import SKUSelectDialog from './SKUSelectDialog.vue'
 
 const router = useRouter()
 const postsStore = usePostsStore()
@@ -117,6 +130,10 @@ const loadingPosts = ref(false)
 const productFavorites = ref([])
 const postFavorites = ref([])
 const favoritePosts = ref([])
+
+// SKU选择对话框
+const showSKUDialog = ref(false)
+const selectedProduct = ref(null)
 
 // 分页相关状态
 const currentPage = ref(1)
@@ -233,27 +250,23 @@ const viewProduct = (productId) => {
     router.push(`/products/${productId}`)
 }
 
-// 加入购物车
-const addToCart = async (product) => {
-    try {
-        // 获取商品的SKU信息
-        const skuData = await productsStore.getSPUSKUs(product.id)
-        
-        // 如果只有一个SKU且没有属性选择，直接添加
-        if (skuData.skus.length === 1 && skuData.attributes.length === 0) {
-            const success = await productsStore.addToCart(skuData.skus[0].sku_code, 1)
-            if (success) {
-                alert('已添加到购物车')
-            }
-        } else {
-            // 如果有多个SKU或需要选择属性，跳转到商品页面
-            alert('此商品需要选择规格，请前往商品页面')
-            router.push('/merch')
-        }
-    } catch (error) {
-        console.error('加入购物车失败:', error)
-        alert('加入购物车失败')
-    }
+// 打开SKU选择对话框
+const openSKUDialog = (product) => {
+    selectedProduct.value = product
+    showSKUDialog.value = true
+}
+
+// 关闭SKU选择对话框
+const closeSKUDialog = () => {
+    showSKUDialog.value = false
+    selectedProduct.value = null
+}
+
+// 处理加入购物车成功
+const handleAddToCartSuccess = () => {
+    closeSKUDialog()
+    // 这里可以显示成功提示
+    console.log('商品已成功加入购物车')
 }
 
 // 处理编辑帖子

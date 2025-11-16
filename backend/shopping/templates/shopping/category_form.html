@@ -6,7 +6,7 @@
 <div class="container">
     <nav class="breadcrumb" aria-label="breadcrumbs">
         <ul>
-            <li><a href="{% url 'shopping:category_management' %}">分类管理</a></li>
+            <li><a href="{% url 'shopping_manage:category_list' %}">分类管理</a></li>
             <li class="is-active"><a href="#" aria-current="page">{% if is_edit %}编辑分类{% else %}新建分类{% endif %}</a></li>
         </ul>
     </nav>
@@ -77,7 +77,7 @@
                     </button>
                 </div>
                 <div class="control">
-                    <a href="{% url 'shopping:category_management' %}" class="button is-light">
+                    <a href="{% url 'shopping_manage:category_list' %}" class="button is-light">
                         <span class="icon">
                             <i class="fas fa-times"></i>
                         </span>

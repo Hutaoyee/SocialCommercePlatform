@@ -44,9 +44,18 @@
                 </div>
 
                 <div v-if="post.products && post.products.length">
-                    <div class="tag is-warning m-1" v-for="product in post.products" :key="product.id">
-                        {{ product.name }}
-                    </div>
+                    <span 
+                        class="tag is-warning m-1 product-tag" 
+                        v-for="product in post.products" 
+                        :key="product.id"
+                        @click="openProductSKU(product.id)"
+                        style="cursor: pointer;"
+                        title="点击加入购物车">
+                        <span class="icon is-small">
+                            <font-awesome-icon icon="fa-solid fa-cart-shopping" />
+                        </span>
+                        <span>{{ product.name }}</span>
+                    </span>
                 </div>
 
                 <nav class="level is-mobile mt-2">
@@ -194,6 +203,28 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="field">
+                            <label class="label">关联商品</label>
+                            <div class="control">
+                                <button type="button" class="button is-info is-light" @click="openProductSelector">
+                                    <span class="icon">
+                                        <font-awesome-icon icon="fa-solid fa-plus" />
+                                    </span>
+                                    <span>添加商品</span>
+                                </button>
+                            </div>
+                            <!-- 显示已选择的商品 -->
+                            <div class="tags mt-2" v-if="formData.product_ids.length > 0">
+                                <span 
+                                    class="tag is-warning is-medium m-1" 
+                                    v-for="productId in formData.product_ids" 
+                                    :key="productId">
+                                    {{ getProductName(productId) }}
+                                    <button class="delete is-small" @click="removeProduct(productId)"></button>
+                                </span>
+                            </div>
+                        </div>
                     </form>
                 </section>
 
@@ -207,6 +238,79 @@
                 </footer>
             </div>
         </div>
+
+        <!-- 商品选择模态框 -->
+        <div class="modal" :class="{ 'is-active': isProductSelectorActive }">
+            <div class="modal-background" @click="closeProductSelector"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">选择商品</p>
+                    <button class="delete" aria-label="close" @click="closeProductSelector"></button>
+                </header>
+                <section class="modal-card-body product-selector-body">
+                    <!-- 搜索框 -->
+                    <div class="field">
+                        <div class="control has-icons-left">
+                            <input 
+                                class="input" 
+                                type="text" 
+                                placeholder="搜索商品..." 
+                                v-model="productSearchQuery"
+                                @input="searchProducts">
+                            <span class="icon is-left">
+                                <font-awesome-icon icon="fa-solid fa-magnifying-glass" />
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 商品列表 -->
+                    <div v-if="loadingProducts" class="has-text-centered">
+                        <progress class="progress is-small is-primary" max="100">加载中...</progress>
+                    </div>
+                    <div v-else-if="availableProducts.length === 0" class="notification is-info is-light">
+                        暂无商品
+                    </div>
+                    <div v-else class="product-list">
+                        <div 
+                            class="box product-item" 
+                            v-for="product in availableProducts" 
+                            :key="product.id"
+                            :class="{ 'is-selected': formData.product_ids.includes(product.id) }"
+                            @click="toggleProduct(product.id)">
+                            <div class="columns is-vcentered">
+                                <div class="column is-narrow">
+                                    <figure class="image is-64x64">
+                                        <img :src="product.image" :alt="product.name" style="object-fit: cover;">
+                                    </figure>
+                                </div>
+                                <div class="column">
+                                    <p class="title is-6">{{ product.name }}</p>
+                                    <p class="subtitle is-7 has-text-grey">{{ product.desc }}</p>
+                                </div>
+                                <div class="column is-narrow">
+                                    <span class="icon has-text-success" v-if="formData.product_ids.includes(product.id)">
+                                        <font-awesome-icon icon="fa-solid fa-check-circle" size="lg" />
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <footer class="modal-card-foot">
+                    <button class="button is-primary mr-3" @click="closeProductSelector">确定</button>
+                    <button class="button" @click="closeProductSelector">取消</button>
+                </footer>
+            </div>
+        </div>
+
+
+        <!-- SKU选择模态框 -->
+        <SKUSelectDialog 
+            :show="skuModalShow"
+            :product="selectedProduct"
+            @close="closeSKUModal"
+            @success="handleSKUAdded"
+        />
 
 
         <!-- 回复模态框 -->
@@ -425,8 +529,10 @@
 import { ref, watch, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { usePostsStore } from '@/stores/posts'
+import { useProductsStore } from '@/stores/products'
 import { storeToRefs } from 'pinia'
 import { favoriteAPI } from '@/api/favorite'
+import SKUSelectDialog from './SKUSelectDialog.vue'
 
 const props = defineProps({
     posts: {
@@ -452,6 +558,7 @@ const emit = defineEmits(['edit', 'delete', 'page-change', 'submit', 'reply', 'd
 
 const userStore = useUserStore()
 const postsStore = usePostsStore()
+const productsStore = useProductsStore()
 const { availableTags } = storeToRefs(postsStore)
 
 // 模态框状态
@@ -459,6 +566,17 @@ const isModalActive = ref(false)
 const editingPost = ref(null)
 const fileInput = ref(null)
 const previewImages = ref([])
+
+// 商品选择相关
+const isProductSelectorActive = ref(false)
+const availableProducts = ref([])
+const productSearchQuery = ref('')
+const loadingProducts = ref(false)
+const productMap = ref({}) // 商品ID到商品对象的映射
+
+// SKU模态框相关
+const skuModalShow = ref(false)
+const selectedProduct = ref(null)
 
 // 回复模态框状态
 const isReplyModalActive = ref(false)
@@ -478,7 +596,8 @@ const formData = ref({
     title: '',
     content: '',
     tag_ids: [],
-    uploadedImages: []
+    uploadedImages: [],
+    product_ids: []
 })
 
 // 检查是否可以编辑
@@ -539,7 +658,8 @@ const resetForm = () => {
         title: '',
         content: '',
         tag_ids: [],
-        uploadedImages: []
+        uploadedImages: [],
+        product_ids: []
     }
     previewImages.value = []
 }
@@ -551,7 +671,8 @@ watch(editingPost, (newPost) => {
             title: newPost.title,
             content: newPost.content,
             tag_ids: newPost.tags ? newPost.tags.map(tag => tag.id) : [],
-            uploadedImages: newPost.images ? newPost.images.map(img => img.id) : []
+            uploadedImages: newPost.images ? newPost.images.map(img => img.id) : [],
+            product_ids: newPost.products ? newPost.products.map(p => p.id) : []
         }
         // 加载现有图片预览
         previewImages.value = newPost.images ? newPost.images.map(img => ({
@@ -642,6 +763,18 @@ const loadFavoriteStatus = async () => {
 // 监听posts变化，加载收藏状态
 watch(() => props.posts, () => {
     loadFavoriteStatus()
+    // 同时保存帖子中的商品信息到 productMap
+    if (props.posts) {
+        props.posts.forEach(post => {
+            if (post.products && Array.isArray(post.products)) {
+                post.products.forEach(product => {
+                    if (product.id && !productMap.value[product.id]) {
+                        productMap.value[product.id] = product
+                    }
+                })
+            }
+        })
+    }
 }, { immediate: true, deep: true })
 
 // 处理关闭模态框
@@ -657,7 +790,8 @@ const handleSubmitModal = () => {
         title: formData.value.title,
         content: formData.value.content,
         tag_ids: formData.value.tag_ids,
-        image_ids: formData.value.uploadedImages
+        image_ids: formData.value.uploadedImages,
+        product_ids: formData.value.product_ids
     }
     
     if (editingPost.value) {
@@ -667,6 +801,107 @@ const handleSubmitModal = () => {
     }
     
     handleCloseModal()
+}
+
+// 商品选择相关函数
+const openProductSelector = async () => {
+    isProductSelectorActive.value = true
+    loadingProducts.value = true
+    try {
+        await productsStore.fetchProducts(1, '')
+        availableProducts.value = productsStore.products
+        // 构建商品映射
+        productMap.value = {}
+        availableProducts.value.forEach(p => {
+            productMap.value[p.id] = p
+        })
+    } catch (error) {
+        console.error('加载商品列表失败:', error)
+    } finally {
+        loadingProducts.value = false
+    }
+}
+
+const closeProductSelector = () => {
+    isProductSelectorActive.value = false
+    productSearchQuery.value = ''
+}
+
+const searchProducts = async () => {
+    loadingProducts.value = true
+    try {
+        await productsStore.fetchProducts(1, productSearchQuery.value)
+        availableProducts.value = productsStore.products
+        // 更新商品映射
+        availableProducts.value.forEach(p => {
+            productMap.value[p.id] = p
+        })
+    } catch (error) {
+        console.error('搜索商品失败:', error)
+    } finally {
+        loadingProducts.value = false
+    }
+}
+
+const toggleProduct = (productId) => {
+    const index = formData.value.product_ids.indexOf(productId)
+    if (index > -1) {
+        formData.value.product_ids.splice(index, 1)
+    } else {
+        formData.value.product_ids.push(productId)
+        // 确保商品信息在 productMap 中
+        if (!productMap.value[productId]) {
+            const product = availableProducts.value.find(p => p.id === productId)
+            if (product) {
+                productMap.value[productId] = product
+            }
+        }
+    }
+}
+
+const removeProduct = (productId) => {
+    const index = formData.value.product_ids.indexOf(productId)
+    if (index > -1) {
+        formData.value.product_ids.splice(index, 1)
+    }
+}
+
+const getProductName = (productId) => {
+    return productMap.value[productId]?.name || '商品'
+}
+
+// SKU模态框相关函数
+const openProductSKU = (productId) => {
+    // 从已加载的商品列表或帖子中查找商品信息
+    const product = productMap.value[productId]
+    if (product) {
+        selectedProduct.value = product
+        skuModalShow.value = true
+    } else {
+        // 如果找不到，尝试从当前帖子的产品列表中查找
+        for (const post of props.posts) {
+            if (post.products) {
+                const foundProduct = post.products.find(p => p.id === productId)
+                if (foundProduct) {
+                    selectedProduct.value = foundProduct
+                    skuModalShow.value = true
+                    return
+                }
+            }
+        }
+        alert('找不到商品信息')
+    }
+}
+
+const closeSKUModal = () => {
+    skuModalShow.value = false
+    selectedProduct.value = null
+}
+
+const handleSKUAdded = () => {
+    // SKU添加成功的回调
+    closeSKUModal()
+    console.log('商品已添加到购物车')
 }
 
 // 暴露打开模态框的方法，以便父组件可以调用
@@ -914,6 +1149,15 @@ const formatReplyContent = (content) => {
     white-space: pre-wrap;
 }
 
+.product-tag {
+    transition: all 0.2s ease;
+    
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 209, 175, 0.3);
+    }
+}
+
 .post-images-container {
     display: flex;
     overflow-x: auto;
@@ -1091,6 +1335,45 @@ const formatReplyContent = (content) => {
                 color: rgba(0, 209, 175, 1) !important;
             }
         }
+    }
+}
+// 商品选择模态框样式
+.product-selector-body,
+.product-list {
+    max-height: 60vh;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        background: rgba(0, 209, 175, 0.5);
+        border-radius: 3px;
+    }
+}
+
+.product-list {
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.product-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 0.5rem;
+
+    &:hover {
+        box-shadow: 0 2px 8px rgba(0, 209, 175, 0.3);
+    }
+
+    &.is-selected {
+        border: 2px solid rgba(0, 209, 175, 1);
+        background-color: rgba(0, 209, 175, 0.05);
     }
 }
 </style>

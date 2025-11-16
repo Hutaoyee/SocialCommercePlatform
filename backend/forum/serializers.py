@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Tag, Post, Image, Reply
+from django.apps import apps  # 用于延迟导入模型
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
@@ -59,9 +60,37 @@ class PostSerializer(serializers.ModelSerializer):
         source='images'
     )
 
+    product_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
+
     class Meta:
         model = Post
         fields = '__all__'
+
+    def create(self, validated_data):
+        product_ids = validated_data.pop('product_ids', [])
+        post = super().create(validated_data)
+        
+        if product_ids:
+            ProductSPU = apps.get_model('shopping', 'ProductSPU')
+            products = ProductSPU.objects.filter(id__in=product_ids)
+            post.products.set(products)
+        
+        return post
+
+    def update(self, instance, validated_data):
+        product_ids = validated_data.pop('product_ids', None)
+        post = super().update(instance, validated_data)
+        
+        if product_ids is not None:
+            ProductSPU = apps.get_model('shopping', 'ProductSPU')
+            products = ProductSPU.objects.filter(id__in=product_ids)
+            post.products.set(products)
+        
+        return post
 
     def get_author(self, obj):
         request = self.context.get('request')
@@ -77,6 +106,27 @@ class PostSerializer(serializers.ModelSerializer):
         }
     
     def get_products(self, obj):
-        
+        """返回关联商品信息，包含图片"""
+        request = self.context.get('request')
         products = obj.products.all()
-        return [{'id': product.id, 'name': product.name} for product in products]
+        result = []
+        for product in products:
+            # 获取主图
+            image = product.images.filter(is_main=True).first()
+            image_url = None
+            if image:
+                if request:
+                    try:
+                        image_url = request.build_absolute_uri(image.image.url)
+                    except Exception:
+                        image_url = image.image.url
+                else:
+                    image_url = image.image.url
+            
+            result.append({
+                'id': product.id,
+                'name': product.name,
+                'description': product.description,
+                'image': image_url
+            })
+        return result

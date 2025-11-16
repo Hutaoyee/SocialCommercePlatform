@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 
-from .models import PostFavorite, ProductFavorite, CartItem
+from .models import PostFavorite, ProductFavorite, CartItem, Address
 from forum.serializers import PostSerializer
 
 User = get_user_model()  # 获取自定义的 User 模型
@@ -162,3 +162,28 @@ class CartItemSerializer(serializers.ModelSerializer):
             'spu_name': sku.spu.name,
             'spu_id': sku.spu.id
         }
+
+
+# 地址序列化器
+class AddressSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)
+    
+    class Meta:
+        model = Address
+        fields = ['id', 'user', 'name', 'phone', 'province', 'city', 'district', 'address', 'is_default']
+        read_only_fields = ['user']
+    
+    def validate_phone(self, value):
+        """验证手机号格式"""
+        import re
+        if not re.match(r'^1[3-9]\d{9}$', value):
+            raise serializers.ValidationError('请输入正确的手机号')
+        return value
+    
+    def create(self, validated_data):
+        """创建地址时，如果是第一个地址，自动设为默认"""
+        user = self.context['request'].user
+        validated_data['user'] = user
+        if not Address.objects.filter(user=user).exists():
+            validated_data['is_default'] = True
+        return super().create(validated_data)

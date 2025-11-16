@@ -45,18 +45,18 @@
     <!-- 导航栏 -->
     <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
-            <a class="navbar-item" href="{% url 'shopping:product_management' %}">
+            <a class="navbar-item" href="{% url 'shopping_manage:product_list' %}">
                 <strong>商品管理系统</strong>
             </a>
         </div>
 
         <div class="navbar-menu">
             <div class="navbar-start">
-                <a class="navbar-item" href="{% url 'shopping:product_management' %}">
+                <a class="navbar-item" href="{% url 'shopping_manage:product_list' %}">
                     <span class="icon"><i class="fas fa-box"></i></span>
                     <span>商品列表</span>
                 </a>
-                <a class="navbar-item" href="{% url 'shopping:attribute_management' %}">
+                <a class="navbar-item" href="{% url 'shopping_manage:attribute_list' %}">
                     <span class="icon"><i class="fas fa-tags"></i></span>
                     <span>属性管理</span>
                 </a>

@@ -12,7 +12,7 @@
         </div>
         <div class="level-right">
             <div class="level-item">
-                <a href="{% url 'shopping:product_management' %}" class="button is-info">
+                <a href="{% url 'shopping_manage:product_list' %}" class="button is-info">
                     <span class="icon">
                         <i class="fas fa-box"></i>
                     </span>
@@ -20,7 +20,7 @@
                 </a>
             </div>
             <div class="level-item">
-                <a href="{% url 'shopping:category_create' %}" class="button is-primary">
+                <a href="{% url 'shopping_manage:category_create' %}" class="button is-primary">
                     <span class="icon">
                         <i class="fas fa-plus"></i>
                     </span>
@@ -81,13 +81,13 @@
                     </td>
                     <td>
                         <div class="buttons">
-                            <a href="{% url 'shopping:category_edit' category.id %}" class="button is-small is-info">
+                            <a href="{% url 'shopping_manage:category_edit' category.id %}" class="button is-small is-info">
                                 <span class="icon">
                                     <i class="fas fa-edit"></i>
                                 </span>
                                 <span>编辑</span>
                             </a>
-                            <form method="post" action="{% url 'shopping:category_delete' category.id %}" style="display: inline;" 
+                            <form method="post" action="{% url 'shopping_manage:category_delete' category.id %}" style="display: inline;" 
                                   onsubmit="return confirm('确定要删除分类 {{ category.name }} 吗？');">
                                 {% csrf_token %}
                                 <button type="submit" class="button is-small is-danger">

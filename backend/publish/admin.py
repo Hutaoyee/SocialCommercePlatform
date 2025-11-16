@@ -49,5 +49,3 @@ class NoticeAdmin(admin.ModelAdmin):
     list_display = ['title', 'author', 'is_active', 'created_at', 'updated_at']
     search_fields = ['title', 'author__username']
     list_filter = ['is_active', 'author', 'created_at']
-
-    # TODO 实现自动填充作者功能

@@ -5,8 +5,8 @@
 {% block content %}
 <nav class="breadcrumb" aria-label="breadcrumbs">
     <ul>
-        <li><a href="{% url 'shopping:product_management' %}">商品列表</a></li>
-        <li><a href="{% url 'shopping:sku_management' spu.id %}">SKU管理</a></li>
+        <li><a href="{% url 'shopping_manage:product_list' %}">商品列表</a></li>
+        <li><a href="{% url 'shopping_manage:sku_list' spu.id %}">SKU管理</a></li>
         <li class="is-active"><a href="#" aria-current="page">{% if sku %}编辑SKU{% else %}新建SKU{% endif %}</a></li>
     </ul>
 </nav>
@@ -75,7 +75,7 @@
         {% else %}
         <div class="notification is-warning">
             <p><strong>提示：</strong>该商品还没有设置属性。</p>
-            <p>请先 <a href="{% url 'shopping:spu_attribute_management' spu.id %}">设置商品属性</a> 后再创建SKU。</p>
+            <p>请先 <a href="{% url 'shopping_manage:spu_attribute_management' spu.id %}">设置商品属性</a> 后再创建SKU。</p>
         </div>
         {% endif %}
 
@@ -147,7 +147,7 @@
                 </button>
             </div>
             <div class="control">
-                <a href="{% url 'shopping:sku_management' spu.id %}" class="button is-light">
+                <a href="{% url 'shopping_manage:sku_list' spu.id %}" class="button is-light">
                     <span class="icon"><i class="fas fa-times"></i></span>
                     <span>取消</span>
                 </a>

@@ -44,9 +44,10 @@ const router = createRouter({
     },
 
     {
-      path: '/cart',
-      name: 'Cart',
-      component: () => import('../views/Cart.vue')
+      path: '/checkout',
+      name: 'Checkout',
+      component: () => import('../views/Checkout.vue'),
+      meta: { requiresAuth: true }
     },
 
     {
@@ -59,6 +60,12 @@ const router = createRouter({
       path: '/communicate',
       name: 'Communicate',
       component: () => import('../views/Communicate.vue')
+    },
+
+    {
+      path: '/order-success',
+      name: 'OrderSuccess',
+      component: () => import('../views/OrderSuccess.vue')
     },
   ],
 })

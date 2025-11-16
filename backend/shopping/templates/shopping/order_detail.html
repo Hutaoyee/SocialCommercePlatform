@@ -1,0 +1,293 @@
+{% extends "shopping/base_manage.html" %}
+{% load static %}
+
+{% block title %}订单详情 - {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>订单详情</h2>
+        <a href="{% url 'shopping_manage:order_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+
+    <!-- 订单基本信息 -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">订单信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>订单号：</strong>{{ order.order_number }}</p>
+                            <p><strong>用户：</strong>{{ order.user.username }}</p>
+                            <p><strong>支付方式：</strong>{{ order.get_payment_method_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>创建时间：</strong>{{ order.created_at|date:"Y-m-d H:i:s" }}</p>
+                            <p><strong>更新时间：</strong>{{ order.updated_at|date:"Y-m-d H:i:s" }}</p>
+                            <p>
+                                <strong>订单状态：</strong>
+                                {% if order.status == 'pending' %}
+                                <span class="badge bg-warning">待付款</span>
+                                {% elif order.status == 'paid' %}
+                                <span class="badge bg-info">待发货</span>
+                                {% elif order.status == 'shipped' %}
+                                <span class="badge bg-primary">待收货</span>
+                                {% elif order.status == 'completed' %}
+                                <span class="badge bg-success">已完成</span>
+                                {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-secondary">已取消</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <p><strong>收货地址：</strong></p>
+                        <div class="alert alert-light">
+                            {{ order.shipping_address }}
+                        </div>
+                    </div>
+                    {% if order.shipping_company and order.tracking_number %}
+                    <div class="mb-3">
+                        <p><strong>物流信息：</strong></p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-truck"></i> {{ order.shipping_company }}: {{ order.tracking_number }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">订单金额</h5>
+                </div>
+                <div class="card-body">
+                    <h3 class="text-danger mb-3">¥{{ order.total_amount }}</h3>
+                    <p class="text-muted mb-0">共 {{ order.items.count }} 件商品</p>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">订单操作</h6>
+                </div>
+                <div class="card-body">
+                    {% if order.status == 'paid' %}
+                    <button type="button" class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#shippingModal">
+                        <i class="fas fa-shipping-fast"></i> 标记为已发货
+                    </button>
+                    {% endif %}
+                    
+                    {% if order.status in 'shipped,completed' and order.shipping_company %}
+                    <button type="button" class="btn btn-warning w-100 mb-2" data-bs-toggle="modal" data-bs-target="#updateShippingModal">
+                        <i class="fas fa-edit"></i> 修改物流信息
+                    </button>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-info w-100" data-bs-toggle="modal" data-bs-target="#statusModal">
+                        <i class="fas fa-edit"></i> 更改订单状态
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 订单商品 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">订单商品</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>商品</th>
+                            <th>SKU</th>
+                            <th>单价</th>
+                            <th>数量</th>
+                            <th>小计</th>
+                            <th>评价状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.spu_name }}</td>
+                            <td>{{ item.sku_title }}</td>
+                            <td>¥{{ item.price }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td><strong>¥{{ item.subtotal }}</strong></td>
+                            <td>
+                                {% if item.is_reviewed %}
+                                <span class="badge bg-success">已评价</span>
+                                {% else %}
+                                <span class="badge bg-secondary">未评价</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>订单总额：</strong></td>
+                            <td colspan="2"><strong class="text-danger">¥{{ order.total_amount }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 退款信息 -->
+    {% if refund_request %}
+    <div class="card border-warning">
+        <div class="card-header bg-warning text-white">
+            <h5 class="mb-0">退款申请</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>退款原因：</strong>{{ refund_request.get_reason_display }}</p>
+                    <p><strong>申请时间：</strong>{{ refund_request.created_at|date:"Y-m-d H:i:s" }}</p>
+                    <p><strong>退款状态：</strong>
+                        {% if refund_request.status == 'pending' %}
+                        <span class="badge bg-warning">待审核</span>
+                        {% elif refund_request.status == 'approved' %}
+                        <span class="badge bg-success">已批准</span>
+                        {% elif refund_request.status == 'rejected' %}
+                        <span class="badge bg-danger">已拒绝</span>
+                        {% elif refund_request.status == 'processing' %}
+                        <span class="badge bg-info">处理中</span>
+                        {% elif refund_request.status == 'completed' %}
+                        <span class="badge bg-success">已完成</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>详细说明：</strong></p>
+                    <div class="alert alert-light">
+                        {{ refund_request.description }}
+                    </div>
+                    {% if refund_request.admin_note %}
+                    <p><strong>管理员备注：</strong></p>
+                    <div class="alert alert-info">
+                        {{ refund_request.admin_note }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% if refund_request.status == 'pending' %}
+            <div class="text-end">
+                <a href="{% url 'shopping_manage:refund_detail' refund_request.id %}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> 查看详情并处理
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 发货模态框 -->
+<div class="modal fade" id="shippingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'shopping_manage:order_mark_shipped' order.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">标记为已发货</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">物流公司 <span class="text-danger">*</span></label>
+                        <input type="text" name="shipping_company" class="form-control" placeholder="例如：顺丰速运" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">物流单号 <span class="text-danger">*</span></label>
+                        <input type="text" name="tracking_number" class="form-control" placeholder="例如：SF1234567890" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success">确认发货</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 修改物流信息模态框 -->
+<div class="modal fade" id="updateShippingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'shopping_manage:order_update_shipping' order.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">修改物流信息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">物流公司 <span class="text-danger">*</span></label>
+                        <input type="text" name="shipping_company" class="form-control" value="{{ order.shipping_company }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">物流单号 <span class="text-danger">*</span></label>
+                        <input type="text" name="tracking_number" class="form-control" value="{{ order.tracking_number }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-warning">更新物流信息</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 更改状态模态框 -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'shopping_manage:order_update_status' order.id %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">更改订单状态</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">当前状态</label>
+                        <input type="text" class="form-control" value="{{ order.get_status_display }}" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">新状态</label>
+                        <select name="status" class="form-select" required>
+                            <option value="">请选择状态</option>
+                            <option value="pending">待付款</option>
+                            <option value="paid">已付款</option>
+                            <option value="shipped">已发货</option>
+                            <option value="completed">已完成</option>
+                            <option value="cancelled">已取消</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">确认更改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

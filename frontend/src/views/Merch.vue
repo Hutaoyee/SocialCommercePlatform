@@ -45,7 +45,7 @@
                 <img :src="product.image" :alt="product.name">
             </figure>
             
-            <p class="title is-6 mb-2">{{ product.name }}</p>
+            <p class="title is-5 mb-2 mt-2">{{ product.name }}</p>
             
             <div class="is-flex is-align-items-flex-end is-justify-content-space-between">
                 <button class="button is-success mr-2" @click="showSKUModal(product)">添加到购物车</button>
@@ -69,18 +69,36 @@
     </div>
 
     <!-- 分页 -->
-    <nav class="pagination is-centered mt-6 mb-6" role="navigation" aria-label="pagination" v-if="store.totalPages > 1">
-        <button class="pagination-previous" @click="changePage(store.currentPage - 1)" :disabled="store.currentPage === 1">上一页</button>
-        <button class="pagination-next" @click="changePage(store.currentPage + 1)" :disabled="store.currentPage === store.totalPages">下一页</button>
+    <nav class="pagination is-centered is-rounded mt-6 mb-6" role="navigation" aria-label="pagination" v-if="store.totalPages > 1">
+        <a 
+            class="pagination-previous" 
+            :class="{ 'is-disabled': store.currentPage <= 1 }"
+            @click.prevent="store.currentPage > 1 && changePage(store.currentPage - 1)">
+            上一页
+        </a>
+        <a 
+            class="pagination-next"
+            :class="{ 'is-disabled': store.currentPage >= store.totalPages }"
+            @click.prevent="store.currentPage < store.totalPages && changePage(store.currentPage + 1)">
+            下一页
+        </a>
+        
         <ul class="pagination-list">
-            <li v-for="page in visiblePages" :key="page">
-                <button v-if="page !== '...'" 
-                        class="pagination-link" 
-                        :class="{ 'is-current': page === store.currentPage }"
-                        @click="changePage(page)">
+            <li v-for="(page, index) in visiblePages" :key="index">
+                <span 
+                    v-if="page === '...'" 
+                    class="pagination-ellipsis">
+                    &hellip;
+                </span>
+                <a
+                    v-else
+                    class="pagination-link"
+                    :class="{ 'is-current': page === store.currentPage }"
+                    :aria-label="`Goto page ${page}`"
+                    :aria-current="page === store.currentPage ? 'page' : undefined"
+                    @click.prevent="changePage(page)">
                     {{ page }}
-                </button>
-                <span v-else class="pagination-ellipsis">&hellip;</span>
+                </a>
             </li>
         </ul>
     </nav>
@@ -158,12 +176,13 @@
     </div>
 
     <!-- 评论模态框 -->
-    <div class="modal" :class="{ 'is-active': reviewsModal.show }">
+    <div class="modal modal-reviews" :class="{ 'is-active': reviewsModal.show }">
         <div class="modal-background" @click="closeReviewsModal"></div>
         <div class="modal-card" style="width: 90%; max-width: 700px;">
             <header class="modal-card-head">
                 <p class="modal-card-title">商品评论</p>
             </header>
+
             <section class="modal-card-body">
                 <div v-if="reviewsModal.product">
                     <h2 class="title is-5 mb-4">{{ reviewsModal.product.name }}</h2>
@@ -187,12 +206,20 @@
                                 <div class="media-content">
                                     <p class="title is-6">{{ review.username }}</p>
                                     <p class="subtitle is-7 has-text-grey">
-                                        <span v-for="n in 5" :key="n" class="icon is-small has-text-warning">
-                                            <font-awesome-icon :icon="n <= review.rating ? 'fa-solid fa-star' : 'fa-regular fa-star'" />
-                                        </span>
                                         {{ new Date(review.created_at).toLocaleDateString() }}
                                     </p>
-                                    <p>{{ review.content }}</p>
+                                    <p class="mb-3">{{ review.content }}</p>
+                                    
+                                    <!-- 评价图片 -->
+                                    <div v-if="review.images && review.images.length > 0" class="review-images">
+                                        <div class="columns is-mobile is-multiline">
+                                            <div v-for="(image, idx) in review.images" :key="idx" class="column is-one-quarter-tablet is-one-third-mobile">
+                                                <figure class="image is-square">
+                                                    <img :src="image.url || image.image || image" :alt="`评价图片${idx + 1}`" style="object-fit: cover; cursor: pointer;" @click="previewImage(image.url || image.image || image)">
+                                                </figure>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -381,6 +408,11 @@
                 reviewsModal.value.show = false
             }
             
+            // 预览图片
+            const previewImage = (imageUrl) => {
+                window.open(imageUrl, '_blank')
+            }
+            
             // 获取分类列表
             const fetchCategories = async () => {
                 try {
@@ -434,7 +466,8 @@
                 decreaseQuantity,
                 addToCart,
                 showReviewsModal,
-                closeReviewsModal
+                closeReviewsModal,
+                previewImage
             }
         },
     }
@@ -481,11 +514,6 @@
             width: 6px;
         }
         
-        &::-webkit-scrollbar-track {
-            background: hsl(0, 0%, 96%);
-            border-radius: 3px;
-        }
-        
         &::-webkit-scrollbar-thumb {
             background: hsl(171, 100%, 41%);
             border-radius: 3px;
@@ -508,7 +536,8 @@
                 color: hsl(0, 0%, 29%);
                 
                 &:hover {
-                    background-color: hsl(0, 0%, 96%);
+
+                    color: hsl(171, 100%, 41%);
                     transform: translateX(3px);
                 }
                 
@@ -522,7 +551,7 @@
                 &.level-all {
                     font-weight: 600;
                     font-size: 0.95rem;
-                    border-bottom: 1px solid hsl(0, 0%, 86%);
+                    border-bottom: 1px solid rgba(0, 209, 175, 1);
                     border-radius: 0;
                     margin-bottom: 0.5rem;
                 }
@@ -577,5 +606,67 @@
             
         }
     }
+}
+
+.modal-reviews {
+
+    .modal-card-body {
+
+        &::-webkit-scrollbar {
+            width: 2px;
+        }
+        
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        &::-webkit-scrollbar-thumb {
+            background: rgba(0, 209, 175, 1);
+            border-radius: 3px;
+            
+        }
+    }
+}
+
+/* 评价图片样式 */
+.review-images {
+    margin-top: 0.75rem;
+    
+    .image.is-square {
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid hsl(0, 0%, 21%);
+        transition: transform 0.2s;
+        
+        &:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+    }
+}
+
+.pagination {
+
+    grid-column: 1 / -1;
+}
+
+/* 搜索框聚焦样式 */
+.left-box .input:focus {
+    border-color: hsl(171, 100%, 41%);
+    box-shadow: 0 0 0 0.125em rgba(0, 209, 175, 0.25);
+}
+
+/* 分页样式 */
+.pagination-link.is-current {
+    background-color: rgba(0, 209, 175, 1) !important;
+    border-color: rgba(0, 209, 175, 1) !important;
+    color: rgb(0, 0, 0) !important;
+}
+
+.pagination-previous.is-disabled,
+.pagination-next.is-disabled {
+    cursor: not-allowed !important;
+    opacity: 0.5;
+    pointer-events: none;
 }
 </style>

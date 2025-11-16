@@ -1,0 +1,206 @@
+{% extends "shopping/base_manage.html" %}
+{% load static %}
+
+{% block title %}退款管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>退款管理</h2>
+        <a href="{% url 'shopping_manage:order_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回订单管理
+        </a>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-white bg-primary">
+                <div class="card-body text-center">
+                    <h6>总申请数</h6>
+                    <h3>{{ stats.total }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-warning">
+                <div class="card-body text-center">
+                    <h6>待审核</h6>
+                    <h3>{{ stats.pending }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h6>已批准</h6>
+                    <h3>{{ stats.approved }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-danger">
+                <div class="card-body text-center">
+                    <h6>已拒绝</h6>
+                    <h3>{{ stats.rejected }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-info">
+                <div class="card-body text-center">
+                    <h6>处理中</h6>
+                    <h3>{{ stats.processing }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-white bg-secondary">
+                <div class="card-body text-center">
+                    <h6>已完成</h6>
+                    <h3>{{ stats.completed }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选和搜索 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="搜索订单号/用户名" value="{{ search }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">全部状态</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-success w-100" onclick="batchApprove()">
+                        <i class="fas fa-check"></i> 批量批准
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 退款列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">退款申请列表 (共 {{ refunds.count }} 个)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all"></th>
+                            <th>订单号</th>
+                            <th>用户</th>
+                            <th>退款原因</th>
+                            <th>订单金额</th>
+                            <th>状态</th>
+                            <th>申请时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for refund in refunds %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="refund-checkbox" value="{{ refund.id }}"
+                                    {% if refund.status != 'pending' %}disabled{% endif %}>
+                            </td>
+                            <td>
+                                <a href="{% url 'shopping_manage:order_detail' refund.order.id %}">
+                                    {{ refund.order.order_number }}
+                                </a>
+                            </td>
+                            <td>{{ refund.order.user.username }}</td>
+                            <td>{{ refund.get_reason_display }}</td>
+                            <td><strong class="text-danger">¥{{ refund.order.total_amount }}</strong></td>
+                            <td>
+                                {% if refund.status == 'pending' %}
+                                <span class="badge bg-warning">待审核</span>
+                                {% elif refund.status == 'approved' %}
+                                <span class="badge bg-success">已批准</span>
+                                {% elif refund.status == 'rejected' %}
+                                <span class="badge bg-danger">已拒绝</span>
+                                {% elif refund.status == 'processing' %}
+                                <span class="badge bg-info">处理中</span>
+                                {% elif refund.status == 'completed' %}
+                                <span class="badge bg-secondary">已完成</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ refund.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{% url 'shopping_manage:refund_detail' refund.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> 查看
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">暂无退款申请</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全选功能
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.refund-checkbox:not(:disabled)');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+// 批量批准
+function batchApprove() {
+    const selectedRefunds = Array.from(document.querySelectorAll('.refund-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    if (selectedRefunds.length === 0) {
+        alert('请选择要批准的退款申请');
+        return;
+    }
+    
+    if (!confirm(`确认要批准 ${selectedRefunds.length} 个退款申请吗？\n批准后将恢复相应商品的库存。`)) {
+        return;
+    }
+    
+    fetch("{% url 'shopping_manage:refund_batch_approve' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: selectedRefunds.map(id => `refund_ids[]=${id}`).join('&')
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        alert('操作失败：' + error);
+    });
+}
+</script>
+{% endblock %}

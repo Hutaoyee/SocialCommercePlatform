@@ -53,6 +53,17 @@
                             @click="toggleFilterTag(tag.id)">
                             {{ tag.name }}
                         </span>
+                        <!-- 管理员添加标签入口 -->
+                        <span 
+                            v-if="isAdmin"
+                            class="tag is-medium is-info m-1" 
+                            style="cursor: pointer;"
+                            @click="showAddTagModal = true">
+                            <span class="icon">
+                                <font-awesome-icon icon="fa-solid fa-plus" />
+                            </span>
+                            <span>添加标签</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -89,10 +100,46 @@
             ref="postListRef"
         />
     </div>
+
+    <!-- 添加标签模态框 -->
+    <div class="modal" :class="{ 'is-active': showAddTagModal }">
+        <div class="modal-background" @click="closeAddTagModal"></div>
+        <div class="modal-card" style="max-width: 500px;">
+            <header class="modal-card-head">
+                <p class="modal-card-title">添加新标签</p>
+                <button class="delete" aria-label="close" @click="closeAddTagModal"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="field">
+                    <label class="label">标签名称</label>
+                    <div class="control">
+                        <input 
+                            class="input" 
+                            type="text" 
+                            v-model="newTagName"
+                            placeholder="请输入标签名称"
+                            maxlength="20"
+                            @keyup.enter="handleAddTag">
+                    </div>
+                    <p class="help">标签名称不能超过20个字符</p>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button 
+                    class="button is-success mr-3" 
+                    @click="handleAddTag"
+                    :disabled="!newTagName.trim() || isAddingTag"
+                    :class="{ 'is-loading': isAddingTag }">
+                    添加
+                </button>
+                <button class="button" @click="closeAddTagModal">取消</button>
+            </footer>
+        </div>
+    </div>
 </template>
 
 <script setup>
-    import { onMounted, onUnmounted, ref } from 'vue'
+    import { onMounted, onUnmounted, ref, computed } from 'vue'
     import { storeToRefs } from 'pinia'
     import { usePostsStore } from '@/stores/posts'
     import { useUserStore } from '@/stores/user'
@@ -110,6 +157,16 @@
     const sortBy = ref('-updated_at')  // 默认按更新时间倒序
     const selectedTags = ref([])
     const isFocused = ref(false)
+
+    // 添加标签相关状态
+    const showAddTagModal = ref(false)
+    const newTagName = ref('')
+    const isAddingTag = ref(false)
+
+    // 判断是否为管理员
+    const isAdmin = computed(() => {
+        return userStore.user?.is_staff || userStore.user?.is_superuser
+    })
 
     // 新建帖子模态框
     const openCreateModal = () => {
@@ -243,6 +300,41 @@
         selectedTags.value = []
         sortBy.value = '-updated_at'
         applyFilters(1)
+    }
+
+    // 关闭添加标签模态框
+    const closeAddTagModal = () => {
+        showAddTagModal.value = false
+        newTagName.value = ''
+    }
+
+    // 处理添加标签
+    const handleAddTag = async () => {
+        const tagName = newTagName.value.trim()
+        if (!tagName) {
+            alert('请输入标签名称')
+            return
+        }
+
+        // 检查标签是否已存在
+        if (availableTags.value.some(tag => tag.name === tagName)) {
+            alert('该标签已存在')
+            return
+        }
+
+        isAddingTag.value = true
+        try {
+            await postsStore.createTag(tagName)
+            alert('标签添加成功')
+            closeAddTagModal()
+            // 重新获取标签列表
+            await postsStore.fetchTags()
+        } catch (error) {
+            console.error('添加标签失败:', error)
+            alert('添加标签失败：' + (error.response?.data?.name?.[0] || error.message))
+        } finally {
+            isAddingTag.value = false
+        }
     }
 
     onMounted(async () => {

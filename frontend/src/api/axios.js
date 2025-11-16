@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 // 后端 API 地址
-// #TODO 生产环境：更改后端地址
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}`;;
 
 // 创建统一的 axios 实例
 const apiClient = axios.create({

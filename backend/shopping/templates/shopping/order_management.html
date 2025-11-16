@@ -1,0 +1,213 @@
+{% extends "shopping/base_manage.html" %}
+{% load static %}
+
+{% block title %}订单管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>订单管理</h2>
+        <div>
+            <a href="{% url 'shopping_manage:refund_list' %}" class="btn btn-warning">
+                <i class="fas fa-undo"></i> 退款管理
+            </a>
+            <a href="{% url 'shopping_manage:review_list' %}" class="btn btn-info">
+                <i class="fas fa-star"></i> 评价管理
+            </a>
+        </div>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">总订单数</h5>
+                    <h2>{{ stats.total_orders }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">待付款</h5>
+                    <h2>{{ stats.pending_orders }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">待发货</h5>
+                    <h2>{{ stats.paid_orders }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">总销售额</h5>
+                    <h2>¥{{ stats.total_amount|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选和搜索 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="搜索订单号/用户名/地址" value="{{ search }}">
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select">
+                        <option value="">全部状态</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="date_range" class="form-select">
+                        <option value="">全部时间</option>
+                        <option value="today" {% if current_date_range == 'today' %}selected{% endif %}>今天</option>
+                        <option value="week" {% if current_date_range == 'week' %}selected{% endif %}>最近7天</option>
+                        <option value="month" {% if current_date_range == 'month' %}selected{% endif %}>最近30天</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-success w-100" onclick="batchShip()">
+                        <i class="fas fa-shipping-fast"></i> 批量发货
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 订单列表 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">订单列表 (共 {{ orders.count }} 个订单)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="select-all"></th>
+                            <th>订单号</th>
+                            <th>用户</th>
+                            <th>商品数量</th>
+                            <th>订单金额</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="order-checkbox" value="{{ order.id }}" 
+                                    {% if order.status != 'paid' %}disabled{% endif %}>
+                            </td>
+                            <td>
+                                <a href="{% url 'shopping_manage:order_detail' order.id %}">
+                                    <strong>{{ order.order_number }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ order.user.username }}</td>
+                            <td>{{ order.items.count }} 件</td>
+                            <td>
+                                <strong class="text-danger">¥{{ order.total_amount }}</strong>
+                            </td>
+                            <td>
+                                {% if order.status == 'pending' %}
+                                <span class="badge bg-warning">待付款</span>
+                                {% elif order.status == 'paid' %}
+                                <span class="badge bg-info">待发货</span>
+                                {% elif order.status == 'shipped' %}
+                                <span class="badge bg-primary">待收货</span>
+                                {% elif order.status == 'completed' %}
+                                <span class="badge bg-success">已完成</span>
+                                {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-secondary">已取消</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <a href="{% url 'shopping_manage:order_detail' order.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> 查看
+                                </a>
+                                {% if order.status == 'paid' %}
+                                <form method="post" action="{% url 'shopping_manage:order_mark_shipped' order.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('确认标记为已发货？')">
+                                        <i class="fas fa-shipping-fast"></i> 发货
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">暂无订单</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全选功能
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.order-checkbox:not(:disabled)');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+// 批量发货
+function batchShip() {
+    const selectedOrders = Array.from(document.querySelectorAll('.order-checkbox:checked'))
+        .map(cb => cb.value);
+    
+    if (selectedOrders.length === 0) {
+        alert('请选择要发货的订单');
+        return;
+    }
+    
+    if (!confirm(`确认要发货 ${selectedOrders.length} 个订单吗？`)) {
+        return;
+    }
+    
+    fetch("{% url 'shopping_manage:order_batch_ship' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: selectedOrders.map(id => `order_ids[]=${id}`).join('&')
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => {
+        alert('操作失败：' + error);
+    });
+}
+</script>
+{% endblock %}

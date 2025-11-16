@@ -5,7 +5,7 @@
 {% block content %}
 <nav class="breadcrumb" aria-label="breadcrumbs">
     <ul>
-        <li><a href="{% url 'shopping:product_management' %}">商品列表</a></li>
+        <li><a href="{% url 'shopping_manage:product_list' %}">商品列表</a></li>
         <li class="is-active"><a href="#" aria-current="page">{% if spu %}编辑商品{% else %}新建商品{% endif %}</a></li>
     </ul>
 </nav>
@@ -129,7 +129,7 @@
                 </button>
             </div>
             <div class="control">
-                <a href="{% url 'shopping:product_management' %}" class="button is-light">
+                <a href="{% url 'shopping_manage:product_list' %}" class="button is-light">
                     <span class="icon"><i class="fas fa-times"></i></span>
                     <span>取消</span>
                 </a>

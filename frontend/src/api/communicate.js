@@ -27,6 +27,11 @@ export const communicateAPI = {
         return apiClient.get('/forum/tags/', { params });
     },
 
+    // 创建标签
+    createTag(data) {
+        return apiClient.post('/forum/tags/', data);
+    },
+
     // 上传图片
     uploadImage(formData) {
         return apiClient.post('/forum/images/', formData, {

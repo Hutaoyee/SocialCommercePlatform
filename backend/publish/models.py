@@ -42,6 +42,7 @@ class Album(models.Model):
     cover_image = models.ImageField(upload_to=album_upload_path, blank=True, verbose_name="封面图片")
     release_date = models.DateField(blank=True, null=True, verbose_name="发行日期")
     description = models.TextField(blank=True, verbose_name="描述")
+    product = models.ForeignKey('shopping.ProductSPU', on_delete=models.SET_NULL, null=True, blank=True, related_name='albums', verbose_name="关联商品")
     is_active = models.BooleanField(default=True, verbose_name="是否发布")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
 

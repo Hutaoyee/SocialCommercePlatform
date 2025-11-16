@@ -26,26 +26,6 @@
 - Axios
 - Vite
 
-## 项目结构
-
-```
-├── backend/           # Django 后端
-│   ├── backend/      # 项目配置
-│   ├── user/         # 用户模块
-│   ├── shopping/     # 购物模块
-│   ├── forum/        # 论坛模块
-│   ├── publish/      # 发布模块
-│   └── media/        # 媒体文件
-├── frontend/         # Vue 前端
-│   ├── src/
-│   │   ├── components/
-│   │   ├── views/
-│   │   ├── router/
-│   │   └── stores/
-│   └── public/
-└── docs/            # 文档
-```
-
 ## 快速开始
 
 ### 环境要求
@@ -68,7 +48,17 @@ pip install -r requirements.txt
 
 2. 配置环境变量：
 
-复制 `.env.example` 为 `.env` 并填写配置信息。
+```bash
+# 复制环境变量模板
+cp backend/.env.example backend/.env
+
+# 编辑 backend/.env 文件，填写以下配置：
+# - SECRET_KEY: Django 密钥（使用 python backend/generate_secret_key.py 生成）
+# - DEBUG: 开发环境设为 True，生产环境设为 False
+# - ALLOWED_HOSTS: 允许的主机名
+# - DB_* : 数据库配置
+# - STRIPE_*: Stripe 支付密钥（可选）
+```
 
 3. 数据库迁移：
 
@@ -114,13 +104,6 @@ npm run dev
 npm run build
 ```
 
-## API 文档
-
-详细 API 文档请查看：
-- [API 测试指南](API_TESTING_GUIDE.md)
-- [商品管理指南](PRODUCT_MANAGEMENT_GUIDE.md)
-- [分类管理指南](CATEGORY_MANAGEMENT_GUIDE.md)
-
 ## 开发指南
 
 ### 代码规范
@@ -152,16 +135,6 @@ npm run test:e2e
 4. 配置 Nginx 反向代理
 5. 前端构建并部署到静态文件服务器
 
-详细部署步骤请参考 [部署文档](DEPLOYMENT.md)
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
 ## 许可证
 
 MIT License
-
-## 联系方式
-
-如有问题，请提交 Issue。

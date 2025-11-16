@@ -259,5 +259,20 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+/* 自定义输入框聚焦时的边框颜色 */
+.input:focus,
+.input:active {
+  border-color: hsl(171, 100%, 41%);
+  box-shadow: 0 0 0 0.125em rgba(0, 209, 178, 0.25);
+}
 
+/* 按钮样式 */
+.button.is-success {
+  background-color: hsl(171, 100%, 41%);
+  border-color: transparent;
+}
+
+.button.is-success:hover {
+  background-color: hsl(171, 100%, 35%);
+}
 </style>
