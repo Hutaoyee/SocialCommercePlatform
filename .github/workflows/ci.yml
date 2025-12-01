@@ -16,6 +16,9 @@ jobs:
   # 前端测试和构建
   frontend-test:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - uses: actions/checkout@v4
@@ -35,15 +38,11 @@ jobs:
         cd frontend
         npm run build
     
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v4
       with:
-        name: frontend-dist
         path: frontend/dist
-
-    - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@v4.4.0
-      with:
-        branch: gh-pages
-        folder: frontend/dist
-        clean: true
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
