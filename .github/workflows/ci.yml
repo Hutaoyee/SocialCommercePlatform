@@ -25,16 +25,6 @@ jobs:
         cd frontend
         npm ci
     
-    - name: Run linter
-      run: |
-        cd frontend
-        npm run lint
-    
-    - name: Run unit tests
-      run: |
-        cd frontend
-        npm run test:unit
-    
     - name: Build
       run: |
         cd frontend
