@@ -1,37 +1,33 @@
 # Social Commerce Platform
 
-一个基于 Vue 3 + Django REST Framework 的社交电商平台。
+一个基于 Vue 3 + Django 的社交电商平台。
 
 ## 功能特性
 
-- 🛍️ 商品管理（分类、属性、SKU）
-- 💬 社区论坛（帖子、回复、点赞）
-- 🎵 内容发布（音乐、视频）
-- 👤 用户系统（注册、登录、JWT 认证）
-- 🛒 购物功能
+- 🛍️ 商品管理
+- 💬 社区论坛
+- 🎵 内容发布
+- 👤 用户系统
+- 🛒 购物功能与支付系统
 
 ## 技术栈
 
 ### 后端
-- Django 5.2.7
+- Django
 - Django REST Framework
 - MySQL
-- JWT 认证
-- Django MPTT（树形分类）
+- JWT
 
 ### 前端
-- Vue 3
-- Vue Router
-- Pinia
+- Vue 3 (Vite)
 - Axios
-- Vite
 
 ## 快速开始
 
 ### 环境要求
 
 - Python 3.11+
-- Node.js 20.19.0+ 或 22.12.0+
+- Node.js 20.19.0+
 - MySQL 8.0+
 
 ### 后端设置
@@ -79,8 +75,6 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-后端服务运行在：http://localhost:8000
-
 ### 前端设置
 
 1. 安装依赖：
@@ -95,8 +89,6 @@ npm install
 ```bash
 npm run dev
 ```
-
-前端服务运行在：http://localhost:5173
 
 3. 构建生产版本：
 
